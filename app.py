@@ -9,6 +9,15 @@ from urllib.parse import urlparse
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calculator.db")
 PORT = int(os.environ.get("PORT", 5000))
 
+# 如果设置了 DATABASE_URL（例如 Neon 的 PostgreSQL 连接串），就使用云数据库；
+# 否则使用本地 SQLite，方便在电脑上直接运行。
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+USE_POSTGRES = bool(DATABASE_URL)
+
+if USE_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
+
 
 class ExpressionParser:
     """一个不依赖第三方库、安全的四则运算表达式解析器。"""
@@ -121,6 +130,8 @@ def _format_number(value):
 
 
 def _connect():
+    if USE_POSTGRES:
+        return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -128,35 +139,58 @@ def _connect():
 
 def init_db():
     conn = _connect()
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS calculation_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            expression TEXT NOT NULL,
-            result REAL NOT NULL,
-            created_at TEXT NOT NULL
+    cur = conn.cursor()
+    if USE_POSTGRES:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS calculation_history (
+                id SERIAL PRIMARY KEY,
+                expression TEXT NOT NULL,
+                result DOUBLE PRECISION NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
         )
-        """
-    )
+    else:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS calculation_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                expression TEXT NOT NULL,
+                result REAL NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
     conn.commit()
     conn.close()
 
 
 def insert_history(expression, result):
     conn = _connect()
-    conn.execute(
-        "INSERT INTO calculation_history (expression, result, created_at) VALUES (?, ?, ?)",
-        (expression, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-    )
+    cur = conn.cursor()
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if USE_POSTGRES:
+        cur.execute(
+            "INSERT INTO calculation_history (expression, result, created_at) VALUES (%s, %s, %s)",
+            (expression, result, created_at),
+        )
+    else:
+        cur.execute(
+            "INSERT INTO calculation_history (expression, result, created_at) VALUES (?, ?, ?)",
+            (expression, result, created_at),
+        )
     conn.commit()
     conn.close()
 
 
 def fetch_history():
     conn = _connect()
-    rows = conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         "SELECT id, expression, result, created_at FROM calculation_history ORDER BY id DESC"
-    ).fetchall()
+    )
+    rows = cur.fetchall()
     conn.close()
     history = []
     for row in rows:
@@ -173,14 +207,19 @@ def fetch_history():
 
 def delete_history(record_id):
     conn = _connect()
-    conn.execute("DELETE FROM calculation_history WHERE id = ?", (record_id,))
+    cur = conn.cursor()
+    if USE_POSTGRES:
+        cur.execute("DELETE FROM calculation_history WHERE id = %s", (record_id,))
+    else:
+        cur.execute("DELETE FROM calculation_history WHERE id = ?", (record_id,))
     conn.commit()
     conn.close()
 
 
 def clear_history():
     conn = _connect()
-    conn.execute("DELETE FROM calculation_history")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM calculation_history")
     conn.commit()
     conn.close()
 
