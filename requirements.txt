@@ -1,3 +1,2 @@
-# 本地用 SQLite 时不需要安装任何依赖。
-# 部署到 Render 并使用云数据库（Neon 等 PostgreSQL）时需要这个驱动：
+# 后端连接 Neon 云数据库（PostgreSQL）需要的驱动
 psycopg2-binary
