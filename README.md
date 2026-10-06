@@ -8,7 +8,7 @@ This is the back-end service for the front-end and back-end separated calculator
 - The back end provides its capabilities through HTTP/JSON APIs.
 - Calculation history is stored in the Neon cloud database (PostgreSQL).
 
-## Tech Stack
+## Technology Stack
 
 - Language: Python 3
 - HTTP service: `http.server`
