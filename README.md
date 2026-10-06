@@ -1,81 +1,81 @@
-# 计算器后端（Calculator Backend）
+# Calculator Backend
 
-这是「前后端分离计算器」的后端服务，负责接收计算请求、解析表达式、计算结果，并把计算历史持久化到数据库。
+This is the back-end service for the front-end and back-end separated calculator. It receives calculation requests, parses expressions, calculates results, and persists calculation history in a database.
 
-## 项目介绍
+## Overview
 
-- 前端只负责展示和交互，不参与核心计算。
-- 后端通过 HTTP/JSON 接口对外提供能力。
-- 计算历史保存在本地 SQLite 数据库 `calculator.db` 中，重启后不会丢失。
+- The front end only handles display and interaction; it does not do the core calculation.
+- The back end provides its capabilities through HTTP/JSON APIs.
+- Calculation history is stored in the Neon cloud database (PostgreSQL).
 
-## 技术栈
+## Tech Stack
 
-- 语言：Python 3（标准库）
-- HTTP 服务：`http.server`
-- 数据库：`sqlite3`（SQLite）
+- Language: Python 3
+- HTTP service: `http.server`
+- Database: Neon cloud database (PostgreSQL), accessed with `psycopg2`
 
-## 运行环境
+## Runtime Environment
 
-- Python 3.8 或更高版本
-- 无需安装任何第三方依赖
+- Python 3.8 or higher
+- Install dependencies with `pip install -r requirements.txt`
 
-## 安装方法
+## Installation
 
-本项目不依赖第三方库，无需安装依赖。直接运行即可。
+```bash
+pip install -r requirements.txt
+```
 
-## 启动方法
+## Running
 
-在 `calculator_backend` 目录下打开命令行，执行：
+Set the `DATABASE_URL` environment variable to the Neon connection string, then run:
 
 ```bash
 python app.py
 ```
 
-看到 `后端已启动：http://127.0.0.1:5000` 即启动成功。
+## Configuration
 
-## 配置说明
+- `DATABASE_URL`: the Neon (PostgreSQL) connection string. Required.
+- `PORT`: the port the server listens on. Defaults to `5000`.
 
-- 默认监听端口：`5000`（可在 `app.py` 顶部修改 `PORT`）。
-- 数据库文件：首次启动会自动在同目录生成 `calculator.db`。
+## Database Initialization
 
-## 数据库初始化
+The `calculation_history` table is created automatically when the back end starts. Table structure:
 
-数据库由后端在启动时自动创建，无需手动初始化。表结构如下：
-
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 | --- | --- | --- |
-| id | INTEGER | 自增主键 |
-| expression | TEXT | 计算表达式 |
-| result | REAL | 计算结果 |
-| created_at | TEXT | 计算时间 |
+| id | SERIAL PRIMARY KEY | Auto-increment primary key |
+| expression | TEXT | Calculation expression |
+| result | DOUBLE PRECISION | Calculation result |
+| created_at | TEXT | Calculation time |
 
-## 前后端连接方式
+## API
 
-前端通过以下接口访问后端，默认地址为 `http://127.0.0.1:5000`。
+The front end accesses the back end through the following APIs.
 
-### 接口列表
+### Endpoints
 
-- `POST /api/calculate`：计算表达式
-- `GET /api/history`：查询计算历史
-- `DELETE /api/history/{id}`：删除指定历史记录
-- `DELETE /api/history`：清空全部历史（加分功能）
+- `POST /api/calculate`: calculate an expression
+- `GET /api/history`: query history
+- `DELETE /api/history/{id}`: delete a specific history record
+- `DELETE /api/history`: clear all history (extra feature)
 
-### 请求 / 响应示例
+### Request / Response Examples
 
-计算请求：
+Calculation request:
 
 ```json
 POST /api/calculate
 { "expression": "(1+2)*3" }
 ```
 
-成功响应：
+Success response:
 
 ```json
 { "success": true, "expression": "(1+2)*3", "result": 9 }
 ```
 
-错误响应：
+Error response:
 
 ```json
 { "success": false, "message": "Invalid expression" }

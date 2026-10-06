@@ -1,2 +1,2 @@
-# 后端连接 Neon 云数据库（PostgreSQL）需要的驱动
+# Driver for connecting to the Neon cloud database (PostgreSQL)
 psycopg2-binary

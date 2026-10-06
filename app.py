@@ -15,7 +15,7 @@ if not DATABASE_URL:
 
 
 class ExpressionParser:
-    """一个不依赖第三方库、安全的四则运算表达式解析器。"""
+    """A safe, dependency-free arithmetic expression parser."""
 
     def __init__(self):
         self.tokens = []
@@ -32,7 +32,7 @@ class ExpressionParser:
         return _format_number(value)
 
     def _tokenize(self, expression):
-        """把字符串拆成一个一个的 token：数字、运算符、括号。"""
+        """Split the string into tokens: numbers, operators, parentheses."""
         tokens = []
         i = 0
         length = len(expression)
@@ -63,7 +63,7 @@ class ExpressionParser:
         return (None, None)
 
     def _parse_expression(self):
-        """处理加减法（优先级最低）。"""
+        """Handle addition and subtraction (lowest precedence)."""
         value = self._parse_term()
         while self._peek()[0] in ("+", "-"):
             op = self._peek()[0]
@@ -75,7 +75,7 @@ class ExpressionParser:
         return value
 
     def _parse_term(self):
-        """处理乘除法（优先级比加减高）。"""
+        """Handle multiplication and division (higher precedence than add/sub)."""
         value = self._parse_factor()
         while self._peek()[0] in ("*", "/"):
             op = self._peek()[0]
@@ -90,7 +90,7 @@ class ExpressionParser:
         return value
 
     def _parse_factor(self):
-        """处理一元正负号，例如 -5、3*-2。"""
+        """Handle unary plus/minus, e.g. -5, 3*-2."""
         op = self._peek()[0]
         if op == "+":
             self.index += 1
@@ -101,7 +101,7 @@ class ExpressionParser:
         return self._parse_primary()
 
     def _parse_primary(self):
-        """处理数字和括号。"""
+        """Handle numbers and parentheses."""
         token_type, token_value = self._peek()
         if token_type == "NUMBER":
             self.index += 1
@@ -117,7 +117,7 @@ class ExpressionParser:
 
 
 def _format_number(value):
-    """把浮点结果整理得好看一点：整数显示为整数，小数去掉浮点误差。"""
+    """Format the float result nicely: integers stay integers, decimals drop floating-point noise."""
     value = round(value, 10)
     if value.is_integer():
         return int(value)
@@ -206,7 +206,7 @@ class CalculatorHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_OPTIONS(self):
-        # 浏览器跨域预检请求，直接放行
+        # Allow the browser's CORS preflight request
         self._send_json(204, {})
 
     def do_GET(self):
@@ -260,7 +260,7 @@ class CalculatorHandler(BaseHTTPRequestHandler):
             delete_history(record_id)
             self._send_json(200, {"success": True})
 
-        # DELETE /api/history  清空全部（选做的加分功能）
+        # DELETE /api/history  Clear all history (extra feature)
         elif len(parts) == 2 and parts[0] == "api" and parts[1] == "history":
             clear_history()
             self._send_json(200, {"success": True})
@@ -268,15 +268,15 @@ class CalculatorHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"success": False, "message": "Not found"})
 
     def log_message(self, fmt, *args):
-        # 关闭默认的请求日志，避免刷屏
+        # Suppress the default request log to avoid noise
         return
 
 
 def main():
     init_db()
     server = ThreadingHTTPServer(("0.0.0.0", PORT), CalculatorHandler)
-    print(f"后端已启动：http://127.0.0.1:{PORT}")
-    print("按 Ctrl+C 停止服务")
+    print(f"Backend started: http://127.0.0.1:{PORT}")
+    print("Press Ctrl+C to stop")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
